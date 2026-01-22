@@ -1,124 +1,127 @@
 import React from 'react';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as BarTooltip, Legend as BarLegend } from 'recharts';
-import { LineChart, Line, XAxis as LineXAxis, YAxis as LineYAxis, Tooltip as LineTooltip, Legend as LineLegend } from 'recharts';
-import { AreaChart, Area, XAxis as AreaXAxis, YAxis as AreaYAxis, Tooltip as AreaTooltip, CartesianGrid as AreaCartesianGrid, Legend as AreaLegend } from 'recharts';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend as RadarLegend } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as BarTooltip, AreaChart, Area } from 'recharts';
 
-// Sample Data
-const pieData = [
-  { name: 'Income', value: 4000 },
-  { name: 'Expense', value: 3000 },
-];
+function Charts({ transactions }) {
+  // Process Data for Charts
+  const income = transactions.filter(t => t.amount > 0);
+  const expense = transactions.filter(t => t.amount < 0);
 
-const barData = [
-  { name: 'January', income: 4000, expense: 2400 },
-  { name: 'February', income: 3000, expense: 1398 },
-  { name: 'March', income: 2000, expense: 9800 },
-  { name: 'April', income: 2780, expense: 3908 },
-  { name: 'May', income: 1890, expense: 4800 },
-];
+  const totalIncome = income.reduce((acc, t) => acc + t.amount, 0);
+  const totalExpense = Math.abs(expense.reduce((acc, t) => acc + t.amount, 0));
 
-const lineData = [
-  { name: 'January', income: 4000 },
-  { name: 'February', income: 3000 },
-  { name: 'March', income: 5000 },
-  { name: 'April', income: 2000 },
-  { name: 'May', income: 3500 },
-];
+  // 1. Income vs Expense (Pie)
+  const pieData = [
+    { name: 'Income', value: totalIncome },
+    { name: 'Expense', value: totalExpense },
+  ];
 
-const areaData = [
-  { name: 'January', expense: 4000 },
-  { name: 'February', expense: 2000 },
-  { name: 'March', expense: 3000 },
-  { name: 'April', expense: 2500 },
-  { name: 'May', expense: 3500 },
-];
+  // 2. Monthly Data (Bar & Area)
+  const monthlyData = transactions.reduce((acc, t) => {
+    const date = new Date(t.createdAt);
+    const month = date.toLocaleString('default', { month: 'short' });
+    
+    const existing = acc.find(d => d.name === month);
+    if (existing) {
+      if (t.amount > 0) existing.income += t.amount;
+      else existing.expense += Math.abs(t.amount);
+    } else {
+      acc.push({
+        name: month,
+        income: t.amount > 0 ? t.amount : 0,
+        expense: t.amount < 0 ? Math.abs(t.amount) : 0
+      });
+    }
+    return acc;
+  }, []);
 
-const radarData = [
-  { subject: 'Food', A: 120, fullMark: 150 },
-  { subject: 'Transport', A: 98, fullMark: 150 },
-  { subject: 'Entertainment', A: 86, fullMark: 150 },
-  { subject: 'Shopping', A: 99, fullMark: 150 },
-  { subject: 'Others', A: 85, fullMark: 150 },
-];
+  const COLORS = ['#22c55e', '#ef4444']; // Green, Red
 
-function Charts() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-      {/* Pie Chart */}
-      <div className="bg-white p-4 rounded-lg shadow-lg">
-        <h3 className="text-lg font-semibold text-center mb-2">Income vs Expense</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={80} fill="#8884d8" label>
-              {pieData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={index === 0 ? '#82ca9d' : '#ff6347'} />
-              ))}
-            </Pie>
-            <Tooltip />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+    <div className="space-y-8">
+      <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Analytics Dashboard</h2>
 
-      {/* Bar Chart */}
-      <div className="bg-white p-4 rounded-lg shadow-lg">
-        <h3 className="text-lg font-semibold text-center mb-2">Income vs Expense Histogram</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={barData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Bar dataKey="income" fill="#82ca9d" />
-            <Bar dataKey="expense" fill="#ff6347" />
-            <BarTooltip />
-            <BarLegend />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Income vs Expense Pie Chart */}
+        <div className="glass-panel p-6 rounded-2xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 shadow-xl">
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-6 text-center">Income vs Expense</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  stroke="none"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
+                  itemStyle={{ color: '#fff' }}
+                />
+                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-      {/* Line Chart */}
-      <div className="bg-white p-4 rounded-lg shadow-lg">
-        <h3 className="text-lg font-semibold text-center mb-2">Income Trend</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={lineData}>
-            <Line type="monotone" dataKey="income" stroke="#8884d8" />
-            <LineTooltip />
-            <LineLegend />
-            <LineXAxis dataKey="name" />
-            <LineYAxis />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+        {/* Monthly Comparison Bar Chart */}
+        <div className="glass-panel p-6 rounded-2xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 shadow-xl">
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-6 text-center">Monthly Comparison</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
+                <XAxis dataKey="name" stroke="#94a3b8" />
+                <YAxis stroke="#94a3b8" />
+                <BarTooltip 
+                  contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
+                  cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                />
+                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                <Bar dataKey="income" name="Income" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" name="Expense" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-      {/* Area Chart */}
-      <div className="bg-white p-4 rounded-lg shadow-lg">
-        <h3 className="text-lg font-semibold text-center mb-2">Expense Trend</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={areaData}>
-            <Area type="monotone" dataKey="expense" stroke="#8884d8" fill="#8884d8" />
-            <AreaCartesianGrid />
-            <AreaXAxis dataKey="name" />
-            <AreaYAxis />
-            <AreaTooltip />
-            <AreaLegend />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Radar Chart */}
-      <div className="bg-white p-4 rounded-lg shadow-lg">
-        <h3 className="text-lg font-semibold text-center mb-2">Category Comparison</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <RadarChart outerRadius={90} data={radarData}>
-            <PolarGrid />
-            <PolarAngleAxis dataKey="subject" />
-            <PolarRadiusAxis angle={30} domain={[0, 150]} />
-            <Radar name="Expenses" dataKey="A" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-            <RadarLegend />
-          </RadarChart>
-        </ResponsiveContainer>
+        {/* Trend Area Chart */}
+        <div className="glass-panel p-6 rounded-2xl bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 shadow-xl md:col-span-2">
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-6 text-center">Financial Trend</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={monthlyData}>
+                <defs>
+                  <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
+                <XAxis dataKey="name" stroke="#94a3b8" />
+                <YAxis stroke="#94a3b8" />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
+                />
+                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                <Area type="monotone" dataKey="income" name="Income" stroke="#22c55e" fillOpacity={1} fill="url(#colorIncome)" />
+                <Area type="monotone" dataKey="expense" name="Expense" stroke="#ef4444" fillOpacity={1} fill="url(#colorExpense)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
     </div>
   );
